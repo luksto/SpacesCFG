@@ -7,7 +7,14 @@ from pathlib import Path
 ##      local_config_path   = "/home/luke/.config/OrcaSlicer/"
 ##      git_local_repro     = "/home/luke/git/Labor3D_Orca/"
 ##      file_blacklist      = []
-##      file_hitelist       = []
+##      file_whitelist       = []
+
+class config_naming:
+    instance_id = "instance_name"
+    local_config_path = "local_config_path"
+    local_git_prepro = "git_local_repro"
+    blacklist = "file_blacklist"
+    whitelist = "file_whitelist"
 
 def sync_section(para_section) -> bool:
     # read & check all pathes is the section
