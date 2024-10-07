@@ -2,19 +2,17 @@ import configparser
 from pathlib import Path
 
 # Configuration Key-Value default pairs
-## [local]
-## orca_path = "/home/luke/.config/OrcaSlicer/"
-## [Labor]
-## git_local_repro = "/home/luke/git/Labor3D_Orca/"
-## machine_blacklist  = []
-## machine_whitelist  = []
-## filament_blacklist = []
-## filament_whitelist = []
-## profile_blacklist  = []
-## profile_whitelist  = []
-
+##      [labor-orca] # Labor Space Orca profile Section
+##      instance_name       = "LAB"
+##      local_config_path   = "/home/luke/.config/OrcaSlicer/"
+##      git_local_repro     = "/home/luke/git/Labor3D_Orca/"
+##      file_blacklist      = []
+##      file_hitelist       = []
 
 def sync_section(para_section) -> bool:
+    # read & check all pathes is the section
+    # check for no deadlocks in whithe-blacklists
+    
     pass
 
 
