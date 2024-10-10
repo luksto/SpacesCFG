@@ -20,21 +20,21 @@ def check_config_parameters(para_cfg_path:str = None) -> configparser.ConfigPars
 	default_str_cfg_path = "config.cfg"
 
 	# Check and get config file Path
-	cfg_path = 0
+	config_path = 0
 	if para_cfg_path is None or para_cfg_path == "":
-		cfg_path = Path(default_str_cfg_path)
-		if not cfg_path.is_file():
+		config_path = Path(default_str_cfg_path)
+		if not config_path.is_file():
 			print(f"ERR: no Path for Config-file is given, and the default path {default_str_cfg_path} is no file")
 			return None
 	else:
-		cfg_path = Path(para_cfg_path)
-		if not cfg_path.is_file():
+		config_path = Path(para_cfg_path)
+		if not config_path.is_file():
 			print(f"ERR: given Cinfig file path -{para_cfg_path}- is not available or no file")
 			return None
-	print(f"LOG: Use cfgfile: {cfg_path.absolute()}")
+	print(f"LOG: Use cfgfile: {config_path.absolute()}")
 
 	config = configparser.ConfigParser()
-	config.read(cfg_path)
+	config.read(config_path)
 
 	# Check for space sections
 	if len(config.sections()) < 1:
