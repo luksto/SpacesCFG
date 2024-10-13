@@ -1,6 +1,8 @@
 import configparser
 from pathlib import Path
 import json
+import re
+import os
 
 # Configuration Key-Value default pairs
 ##      [labor-orca] # Labor Space Orca profile Section
@@ -16,6 +18,8 @@ class config_naming:
 	local_git_repro = "git_local_repro"
 	blacklist = "file_blacklist"
 	whitelist = "file_whitelist"
+
+filename_regex = "^[A-Za-z0-9_-]+$"
 
 def check_config_parameters(para_cfg_path:str = None) -> configparser.ConfigParser:
 	default_str_cfg_path = "config.cfg"
@@ -44,10 +48,9 @@ def check_config_parameters(para_cfg_path:str = None) -> configparser.ConfigPars
 	
 	# go throu each space section and perferm a sychronisation
 	spaces = config.sections()
-	print(f"vLOG: use spaces: {spaces}")
+	print(f"LOG: use spaces: {spaces}")
 	for space in spaces:
 		sect = config[space]
-		print(sect["git_local_repro"])
 		# todo: execute function for syncronisation on the particular section. all datas are stored in the section variables.
 
 	return config #cofigparser.ConfigParser()
@@ -61,7 +64,33 @@ def sync_blacklisting(section: configparser.SectionProxy) -> bool:
 	pass
 
 def sync_section(para_section:configparser.SectionProxy) -> bool:
+
+	# check for valid <instance_id> != ""
+	try:
+		match = re.fullmatch(filename_regex, para_section[config_naming.instance_id])
+	except:
+		print(f"ERR: broken instance_id given! only chars, digits, _ and - are allowed")
+		return False
+	if match:
+		print(f"ERR: invalid instance_id given! only chars, digits, _ and - are allowed")
+		return False
+
 	# read & check config- and git-path, for existance
+	config_path = os.path.expandvars(para_section[config_naming.local_config_path])
+	config_path = Path(config_path).expanduser()
+	repro_path = os.path.expandvars(para_section[config_naming.local_git_repro])
+	repro_path = Path(repro_path).expanduser()
+		#print(f"DBG: given config path: {para_section[config_naming.local_config_path]} was made to {config_path}")
+		#print(f"DBG: given git-repro path: {para_section[config_naming.local_git_repro]} was made to {repro_path}")
+	### check for vaid paths
+	if not (config_path.exists() and config_path.is_dir()):
+		print(f"ERR: no valid config_path given")
+		print(f"DBG: given config path: {para_section[config_naming.local_config_path]}")
+		return False
+	if not (repro_path.exists() and repro_path.is_dir()):
+		print(f"ERR: no valid local git repository path is given")
+		print(f"DBG: given git-repro path: {para_section[config_naming.local_git_repro]} was made to {repro_path}")
+		return False
 
 	# check ether for whitelisting or blacklistig:
 	## if <whitelist> is not empty
