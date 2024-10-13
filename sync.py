@@ -4,6 +4,8 @@ import json
 import re
 import os
 
+filename_regex = "^[A-Za-z0-9_-]+$"
+
 # Configuration Key-Value default pairs
 ##      [labor-orca] # Labor Space Orca profile Section
 ##      instance_name       = "LAB"
@@ -19,7 +21,111 @@ class config_naming:
 	blacklist = "file_blacklist"
 	whitelist = "file_whitelist"
 
-filename_regex = "^[A-Za-z0-9_-]+$"
+class Section:
+	name: str
+	id: str
+	config_dir: Path
+	repro_dir: Path
+	blacklist: list[str]
+	whitelist: list[str]
+
+	def __init__(self, section_cfg: configparser.ConfigParser):
+		self.name = section_cfg.name
+		if not self.check_set_section_properties(section_cfg):
+			return None
+		
+	def check_set_section_properties (self, section):
+		# check if all section-property's are present
+		if config_naming.instance_id not in section:
+			print(f"ERR: {config_naming.instance_id} is missing in {section.name}")
+			return False
+		if config_naming.local_config_path not in section:
+			print(f"ERR: {config_naming.local_config_path} is missing in {section.name}")
+			return False
+		if config_naming.local_git_repro not in section:
+			print(f"ERR: {config_naming.local_git_repro} is missing in {section.name}")
+			return False
+		if config_naming.blacklist not in section:
+			print(f"ERR: {config_naming.blacklist} is missing in {section.name}")
+			return False
+		if config_naming.blacklist not in section:
+			print(f"ERR: {config_naming.blacklist} is missing in {section.name}")
+			return False
+		
+		# check for valid <instance_id> != ""
+		try:
+			match = re.fullmatch(filename_regex, section[config_naming.instance_id])
+		except:
+			print(f"ERR: broken instance_id given! only chars, digits, _ and - are allowed")
+			return False
+		if match:
+			print(f"ERR: invalid instance_id given! only chars, digits, _ and - are allowed")
+			return False
+		
+		self.id = section[config_naming.instance_id]
+
+
+		# read & check config- and git-path
+		if (not section[config_naming.local_config_path]) or (not section[config_naming.local_git_repro]):
+			print(f"ERR: the config or git repro pathes sould not be empty")
+			return False
+		## Set pathes and resolve Enviroment variables and also (~) syntax
+		config_path = os.path.expandvars(section[config_naming.local_config_path])
+		config_path = Path(config_path).expanduser()
+		repro_path = os.path.expandvars(section[config_naming.local_git_repro])
+		repro_path = Path(repro_path).expanduser()
+			#print(f"DBG: given config path: {para_section[config_naming.local_config_path]} was made to {config_path}")
+			#print(f"DBG: given git-repro path: {para_section[config_naming.local_git_repro]} was made to {repro_path}")
+		## check for valid paths
+		if not (config_path.exists() and config_path.is_dir()):
+			print(f"ERR: no valid config_path given")
+			print(f"DBG: given config path: {section[config_naming.local_config_path]}")
+			return False
+		if not (repro_path.exists() and repro_path.is_dir()):
+			print(f"ERR: no valid local git repository path is given")
+			print(f"DBG: given git-repro path: {section[config_naming.local_git_repro]} was made to {repro_path}")
+			return False
+		## check for r/w rights on config_path and r/- rights on repro_path
+		### TODO: do a proper test of this code!
+		if not os.access(repro_path, os.R_OK):
+			print(f"ERR: No read rights on {config_path}")
+			return False
+		if not os.access(config_path, os.R_OK):
+			print(f"ERR: No read rights on {config_path}")
+			return False
+		if not os.access(config_path, os.W_OK):
+			print(f"ERR: No write rights on {config_path}")
+			return False
+		
+		self.config_dir = config_path
+		self.repro_dir = repro_path
+		
+		
+		# check ether for whitelisting or blacklisting:
+		## if <whitelist> is not empty
+		try:
+			whitelist = json.loads(section.get(config_naming.whitelist))
+		except:
+			print(f"ERR: whitelist data is in non readable shape!")
+			return False
+		try:
+			blacklist = json.loads(section.get(config_naming.blacklist))
+		except:
+			print(f"ERR: blacklist data is in non readable shape!")
+			return False
+		
+		self.whitelist = whitelist
+		self.blacklist = blacklist
+		
+		return True
+
+	def sync(self) -> bool:
+		pass
+
+	def __sync_whitelisting(self):
+		pass
+	def __sync_blacklisting(self):
+		pass
 
 def check_config_parameters(para_cfg_path:str = None) -> configparser.ConfigParser:
 	default_str_cfg_path = "config.cfg"
@@ -55,103 +161,21 @@ def sync_whitelisting(section:configparser.SectionProxy) -> bool:
 
 def sync_blacklisting(section: configparser.SectionProxy) -> bool:
 	pass
+	
 
 def sync_section(para_section:configparser.SectionProxy) -> bool:
-
-	# check if all section-propertys are present
-	if config_naming.instance_id not in para_section:
-		print(f"ERR: {config_naming.instance_id} is missing in {para_section.name}")
-		return False
-	if config_naming.local_config_path not in para_section:
-		print(f"ERR: {config_naming.local_config_path} is missing in {para_section.name}")
-		return False
-	if config_naming.local_git_repro not in para_section:
-		print(f"ERR: {config_naming.local_git_repro} is missing in {para_section.name}")
-		return False
-	if config_naming.blacklist not in para_section:
-		print(f"ERR: {config_naming.blacklist} is missing in {para_section.name}")
-		return False
-	if config_naming.blacklist not in para_section:
-		print(f"ERR: {config_naming.blacklist} is missing in {para_section.name}")
-		return False
-	
-	
-
-	# check for valid <instance_id> != ""
-	try:
-		match = re.fullmatch(filename_regex, para_section[config_naming.instance_id])
-	except:
-		print(f"ERR: broken instance_id given! only chars, digits, _ and - are allowed")
-		return False
-	if match:
-		print(f"ERR: invalid instance_id given! only chars, digits, _ and - are allowed")
-		return False
-
-	# read & check config- and git-path
-	if (not para_section[config_naming.local_config_path]) or (not para_section[config_naming.local_git_repro]):
-		print(f"ERR: the config or git repro pathes sould not be empty")
-		return False
-	## Set pathes and resolve Enviroment variables and also (~) syntax
-	config_path = os.path.expandvars(para_section[config_naming.local_config_path])
-	config_path = Path(config_path).expanduser()
-	repro_path = os.path.expandvars(para_section[config_naming.local_git_repro])
-	repro_path = Path(repro_path).expanduser()
-		#print(f"DBG: given config path: {para_section[config_naming.local_config_path]} was made to {config_path}")
-		#print(f"DBG: given git-repro path: {para_section[config_naming.local_git_repro]} was made to {repro_path}")
-	## check for valid paths
-	if not (config_path.exists() and config_path.is_dir()):
-		print(f"ERR: no valid config_path given")
-		print(f"DBG: given config path: {para_section[config_naming.local_config_path]}")
-		return False
-	if not (repro_path.exists() and repro_path.is_dir()):
-		print(f"ERR: no valid local git repository path is given")
-		print(f"DBG: given git-repro path: {para_section[config_naming.local_git_repro]} was made to {repro_path}")
-		return False
-	## check for r/w rights on config_path and r/- rights on repro_path
-	### TODO: do a proper test of this code!
-	if not os.access(repro_path, os.R_OK):
-		print(f"ERR: No read rights on {config_path}")
-		return False
-	if not os.access(config_path, os.R_OK):
-		print(f"ERR: No read rights on {config_path}")
-		return False
-	if not os.access(config_path, os.W_OK):
-		print(f"ERR: No write rights on {config_path}")
-		return False
-	
-	
-
-	# check ether for whitelisting or blacklistig:
-	## if <whitelist> is not empty
-	try:
-		whitelist = json.loads(para_section.get(config_naming.whitelist))
-	except:
-		print(f"ERR: whitelist data is in non readable shape!")
-		return False
-	try:
-		blacklist = json.loads(para_section.get(config_naming.blacklist))
-	except:
-		print(f"ERR: blacklist data is in non readable shape!")
-		return False
-	
-	if (whitelist):
-		return sync_whitelisting(para_section)
-	if (blacklist):
-		return sync_blacklisting(para_section)
-
-
 	# All config parameters are set and valid!
 
 	return True
-	# check: if <local_config_path> and <local_git_repro> are presend in the FS and if we have r/w rights
-	# check: if all files listed in <whitelist> are presend in <local_git_repro>
-		# balacklists does not need to be present, ony test that the syncing file is not on the blacklist
+	# check: if <local_config_path> and <local_git_repro> are present in the FS and if we have r/w rights
+	# check: if all files listed in <whitelist> are present in <local_git_repro>
+		# blacklists does not need to be present, ony test that the syncing file is not on the blacklist
 	
 	# Sync
 
 	## git-pull/update
 	# Update <local_git_repro>
-	# Rollback if conflicts happend
+	# Rollback if conflicts happened
 	# give easy to resolve tips
 
 	## start syncing (linking) files
@@ -164,17 +188,17 @@ def sync_section(para_section:configparser.SectionProxy) -> bool:
 	# get list of files[linked_files] in <local_config_path> with prefix <instance_id>
 	linked_files = []
 
-	# Check: all [potential_new_files] that are present in <local_config_path> neads to be already linked to [potential_new_files]!
+	# Check: all [potential_new_files] that are present in <local_config_path> needs to be already linked to [potential_new_files]!
 	for new in potential_new:
 		if new.name in local_config.filenames and local_config.files[new.name].linkpath != "<local_git_repro>/new":
-			print(f"ERROR: the File {new.name} is already presend in <local_config_path> but not linked to <local_git_repro>/new as it sould be \n\t Please resolve this conflict by ether deleting the file in your <local_config_path> or linke it properly as this app would do it.")
+			print(f"ERROR: the File {new.name} is already present in <local_config_path> but not linked to <local_git_repro>/new as it sould be \n\t Please resolve this conflict by ether deleting the file in your <local_config_path> or linke it properly as this app would do it.")
 			continue
 		
 
 
 	## link new files
 	# create file link from [potential_new_files] to <local_config_path> if not in [linked_files]
-	for new in potentional_new_files:
+	for new in potential_new_files:
 		if new in linked_files:
 			continue
 		# create link from new to local (same filename)
@@ -199,7 +223,13 @@ def main(para_cfg_path:str = None) -> bool:
 	# get section as object
 	for section_str in config.sections():
 		config_section = config[section_str]
-		sync_section(config_section)
+		working_section = Section(config_section)
+		if not working_section:
+			continue
+		try:
+			working_section.sync()
+		except:
+			print(f"ERR: while syncing...")
 
 	print(f"LOG: DONE")
 
