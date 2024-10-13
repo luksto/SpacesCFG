@@ -75,14 +75,17 @@ def sync_section(para_section:configparser.SectionProxy) -> bool:
 		print(f"ERR: invalid instance_id given! only chars, digits, _ and - are allowed")
 		return False
 
-	# read & check config- and git-path, for existance
+	# read & check config- and git-path
+	if (not para_section[config_naming.local_config_path]) or (not para_section[config_naming.local_git_repro]):
+		print(f"ERR: the config or git repro pathes sould not be empty")
+		return False
 	config_path = os.path.expandvars(para_section[config_naming.local_config_path])
 	config_path = Path(config_path).expanduser()
 	repro_path = os.path.expandvars(para_section[config_naming.local_git_repro])
 	repro_path = Path(repro_path).expanduser()
 		#print(f"DBG: given config path: {para_section[config_naming.local_config_path]} was made to {config_path}")
 		#print(f"DBG: given git-repro path: {para_section[config_naming.local_git_repro]} was made to {repro_path}")
-	### check for vaid paths
+	### check for valid paths
 	if not (config_path.exists() and config_path.is_dir()):
 		print(f"ERR: no valid config_path given")
 		print(f"DBG: given config path: {para_section[config_naming.local_config_path]}")
