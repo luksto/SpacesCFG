@@ -46,13 +46,6 @@ def check_config_parameters(para_cfg_path:str = None) -> configparser.ConfigPars
 		print("ERR: no Space-section is found, check your config")
 		return None
 	
-	# go throu each space section and perferm a sychronisation
-	spaces = config.sections()
-	print(f"LOG: use spaces: {spaces}")
-	for space in spaces:
-		sect = config[space]
-		# todo: execute function for syncronisation on the particular section. all datas are stored in the section variables.
-
 	return config #cofigparser.ConfigParser()
  
 def sync_whitelisting(section:configparser.SectionProxy) -> bool:
@@ -64,6 +57,25 @@ def sync_blacklisting(section: configparser.SectionProxy) -> bool:
 	pass
 
 def sync_section(para_section:configparser.SectionProxy) -> bool:
+
+	# check if all section-propertys are present
+	if config_naming.instance_id not in para_section:
+		print(f"ERR: {config_naming.instance_id} is missing in {para_section.name}")
+		return False
+	if config_naming.local_config_path not in para_section:
+		print(f"ERR: {config_naming.local_config_path} is missing in {para_section.name}")
+		return False
+	if config_naming.local_git_repro not in para_section:
+		print(f"ERR: {config_naming.local_git_repro} is missing in {para_section.name}")
+		return False
+	if config_naming.blacklist not in para_section:
+		print(f"ERR: {config_naming.blacklist} is missing in {para_section.name}")
+		return False
+	if config_naming.blacklist not in para_section:
+		print(f"ERR: {config_naming.blacklist} is missing in {para_section.name}")
+		return False
+	
+	
 
 	# check for valid <instance_id> != ""
 	try:
@@ -95,7 +107,18 @@ def sync_section(para_section:configparser.SectionProxy) -> bool:
 		print(f"ERR: no valid local git repository path is given")
 		print(f"DBG: given git-repro path: {para_section[config_naming.local_git_repro]} was made to {repro_path}")
 		return False
-	## TODO: check for r/w rights on config_path and r/- rights on repro_path
+	## check for r/w rights on config_path and r/- rights on repro_path
+	### TODO: do a proper test of this code!
+	if not os.access(repro_path, os.R_OK):
+		print(f"ERR: No read rights on {config_path}")
+		return False
+	if not os.access(config_path, os.R_OK):
+		print(f"ERR: No read rights on {config_path}")
+		return False
+	if not os.access(config_path, os.W_OK):
+		print(f"ERR: No write rights on {config_path}")
+		return False
+	
 	
 
 	# check ether for whitelisting or blacklistig:
