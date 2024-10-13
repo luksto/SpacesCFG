@@ -1,18 +1,19 @@
 import configparser
 from pathlib import Path
+import json
 
 # Configuration Key-Value default pairs
 ##      [labor-orca] # Labor Space Orca profile Section
 ##      instance_name       = "LAB"
-##      local_config_path   = "/home/luke/.config/OrcaSlicer/"
-##      git_local_repro     = "/home/luke/git/Labor3D_Orca/"
+##      local_config_path   = "~/.config/OrcaSlicer/"
+##      git_local_repro     = "~/git/Labor3D_Orca/"
 ##      file_blacklist      = []
 ##      file_whitelist       = []
 
 class config_naming:
 	instance_id = "instance_name"
 	local_config_path = "local_config_path"
-	local_git_prepro = "git_local_repro"
+	local_git_repro = "git_local_repro"
 	blacklist = "file_blacklist"
 	whitelist = "file_whitelist"
 
@@ -29,9 +30,9 @@ def check_config_parameters(para_cfg_path:str = None) -> configparser.ConfigPars
 	else:
 		config_path = Path(para_cfg_path)
 		if not config_path.is_file():
-			print(f"ERR: given Cinfig file path -{para_cfg_path}- is not available or no file")
+			print(f"ERR: given Config file path -{para_cfg_path}- is not available or no file")
 			return None
-	print(f"LOG: Use cfgfile: {config_path.absolute()}")
+	print(f"LOG: Use cfg-file: {config_path.absolute()}")
 
 	config = configparser.ConfigParser()
 	config.read(config_path)
@@ -49,19 +50,41 @@ def check_config_parameters(para_cfg_path:str = None) -> configparser.ConfigPars
 		print(sect["git_local_repro"])
 		# todo: execute function for syncronisation on the particular section. all datas are stored in the section variables.
 
-	return config
+	return config #cofigparser.ConfigParser()
  
 def sync_whitelisting(section:configparser.SectionProxy) -> bool:
 	# Perform the "sync" based on the <whitelist>
+	# read & check all pathes is the section
+	pass
+
+def sync_blacklisting(section: configparser.SectionProxy) -> bool:
 	pass
 
 def sync_section(para_section:configparser.SectionProxy) -> bool:
-	# read & check all pathes is the section
-	# check for no deadlocks in whithe-blacklists
+	# read & check config- and git-path, for existance
 
-	# get list of keys for the section
+	# check ether for whitelisting or blacklistig:
+	## if <whitelist> is not empty
+	try:
+		whitelist = json.loads(para_section.get(config_naming.whitelist))
+	except:
+		print(f"ERR: whitelist data is in non readable shape!")
+		return False
+	try:
+		blacklist = json.loads(para_section.get(config_naming.blacklist))
+	except:
+		print(f"ERR: blacklist data is in non readable shape!")
+		return False
+	
+	if (whitelist):
+		return sync_whitelisting(para_section)
+	if (blacklist):
+		return sync_blacklisting(para_section)
 
-	# ckeck: if all keys from <config_nameing> are present
+
+	# check: if all keys from <config_nameing> are present
+
+	return False
 	# check: if <local_config_path> and <local_git_repro> are presend in the FS and if we have r/w rights
 	# check: if all files listed in <whitelist> are presend in <local_git_repro>
 		# balacklists does not need to be present, ony test that the syncing file is not on the blacklist
@@ -70,11 +93,8 @@ def sync_section(para_section:configparser.SectionProxy) -> bool:
 
 	## git-pull/update
 	# Update <local_git_repro>
-	# Rollback if confickts happends
-	# give easy to resolfe tipps
-
-	## if <whitelist> is not empty
-	return sync_whitelisting(para_section)
+	# Rollback if conflicts happend
+	# give easy to resolve tips
 
 	## start syncing (linking) files
 	
@@ -120,9 +140,10 @@ def main(para_cfg_path:str = None) -> bool:
 	# get first config section
 	# get section as object
 	for section_str in config.sections():
-		sec = config[section_str]
-		sync_section(sec)
+		config_section = config[section_str]
+		sync_section(config_section)
 
+	print(f"LOG: DONE")
 
 
 
