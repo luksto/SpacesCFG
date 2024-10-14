@@ -48,7 +48,22 @@ class Section:
 		if not self.check_set_section_properties(section_cfg):
 			return None
 		
+	
 	def check_set_section_properties (self, section):
+		"""Checking if given Section is in a readable shape and all paths are accessible as expected.
+
+		Args:
+			section (configparser.ConfigParser): A Section in an *.cfg Config file
+
+		Raises:
+			MissingCFGSectionPropertyError: Missing the named element form the given Section
+			InvalidConfigValueError: Invalid element-value given in the specified Section-element
+			FileNotFoundError: Given Path not found
+			PermissionError: Cant access given path with read or write permission - see output
+
+		Returns:
+			None: No Return
+		"""
 		# check if all section-property's are present
 		if config_naming.instance_id not in section:
 			raise MissingCFGSectionPropertyError(f"{config_naming.instance_id}")
