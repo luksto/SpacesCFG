@@ -14,6 +14,9 @@ class ConfigurationError(Exception):
 class MissingConfigError(ConfigurationError):
     pass
 
+class MissingCFGSectionPropertyError(MissingConfigError):
+	pass
+
 class InvalidConfigValueError(ConfigurationError):
     pass
 
@@ -48,39 +51,32 @@ class Section:
 	def check_set_section_properties (self, section):
 		# check if all section-property's are present
 		if config_naming.instance_id not in section:
-			print(f"ERR: {config_naming.instance_id} is missing in {section.name}")
-			return False
+			raise MissingCFGSectionPropertyError(f"{config_naming.instance_id}")
 		if config_naming.local_config_path not in section:
-			print(f"ERR: {config_naming.local_config_path} is missing in {section.name}")
-			return False
+			raise MissingCFGSectionPropertyError(f"{config_naming.local_config_path}")
 		if config_naming.local_git_repro not in section:
-			print(f"ERR: {config_naming.local_git_repro} is missing in {section.name}")
-			return False
+			raise MissingCFGSectionPropertyError(f"{config_naming.local_git_repro}")
 		if config_naming.blacklist not in section:
-			print(f"ERR: {config_naming.blacklist} is missing in {section.name}")
-			return False
-		if config_naming.blacklist not in section:
-			print(f"ERR: {config_naming.blacklist} is missing in {section.name}")
-			return False
+			raise MissingCFGSectionPropertyError(f"{config_naming.blacklist}")
+		if config_naming.whitelist not in section:
+			raise MissingCFGSectionPropertyError(f"{config_naming.whitelist}")
+
 		
 		# check for valid <instance_id> != ""
 		try:
 			match = re.fullmatch(filename_regex, section[config_naming.instance_id])
-		except:
-			print(f"ERR: broken instance_id given! only chars, digits, _ and - are allowed")
-			return False
-		if match:
-			print(f"ERR: invalid instance_id given! only chars, digits, _ and - are allowed")
-			return False
+		except Exception as e:
+			raise InvalidConfigValueError(f"broken instance_id({section[config_naming.instance_id]}) was given! see: Error: {e}")
+		if match: # No mach was found
+			raise InvalidConfigValueError(f"invalid instance_id given! only chars, digits, _ and - are allowed")
 		
 		self.id = section[config_naming.instance_id]
 
 
 		# read & check config- and git-path
 		if (not section[config_naming.local_config_path]) or (not section[config_naming.local_git_repro]):
-			print(f"ERR: the config or git repro pathes sould not be empty")
-			return False
-		## Set pathes and resolve Enviroment variables and also (~) syntax
+			raise InvalidConfigValueError(f"config or git repro paths should not be empty")
+		## Set paths and resolve Environment variables and also (~) syntax
 		config_path = os.path.expandvars(section[config_naming.local_config_path])
 		config_path = Path(config_path).expanduser()
 		repro_path = os.path.expandvars(section[config_naming.local_git_repro])
@@ -88,25 +84,22 @@ class Section:
 			#print(f"DBG: given config path: {para_section[config_naming.local_config_path]} was made to {config_path}")
 			#print(f"DBG: given git-repro path: {para_section[config_naming.local_git_repro]} was made to {repro_path}")
 		## check for valid paths
-		if not (config_path.exists() and config_path.is_dir()):
-			print(f"ERR: no valid config_path given")
-			print(f"DBG: given config path: {section[config_naming.local_config_path]}")
-			return False
-		if not (repro_path.exists() and repro_path.is_dir()):
-			print(f"ERR: no valid local git repository path is given")
-			print(f"DBG: given git-repro path: {section[config_naming.local_git_repro]} was made to {repro_path}")
-			return False
+		if not (config_path.exists()):
+			raise FileNotFoundError(f"Config-path: ({config_path})")
+		if not config_path.is_dir():
+			raise InvalidConfigValueError(f"Config-path({config_path}) is no Directory")
+		if not (repro_path.exists()):
+			raise FileNotFoundError(f"Repro-path: ({repro_path})")
+		if not repro_path.is_dir():
+			raise InvalidConfigValueError(f"Repro-path({repro_path}) is no Directory")
 		## check for r/w rights on config_path and r/- rights on repro_path
 		### TODO: do a proper test of this code!
 		if not os.access(repro_path, os.R_OK):
-			print(f"ERR: No read rights on {config_path}")
-			return False
+			raise PermissionError(f"with reading on Repro-Path: {repro_path}")
 		if not os.access(config_path, os.R_OK):
-			print(f"ERR: No read rights on {config_path}")
-			return False
+			raise PermissionError(f"with reading on Config-Path: {config_path}")
 		if not os.access(config_path, os.W_OK):
-			print(f"ERR: No write rights on {config_path}")
-			return False
+			raise PermissionError(f"with writing on Config-Path: {config_path}")
 		
 		self.config_dir = config_path
 		self.repro_dir = repro_path
@@ -116,14 +109,13 @@ class Section:
 		## if <whitelist> is not empty
 		try:
 			whitelist = json.loads(section.get(config_naming.whitelist))
-		except:
-			print(f"ERR: whitelist data is in non readable shape!")
-			return False
+		except Exception as e:
+			raise InvalidConfigValueError(f"whitelist data is in non readable shape! See: {e}")
+
 		try:
 			blacklist = json.loads(section.get(config_naming.blacklist))
-		except:
-			print(f"ERR: blacklist data is in non readable shape!")
-			return False
+		except Exception as e:
+			raise InvalidConfigValueError(f"blacklist data is in non readable shape! See: {e}")
 		
 		self.whitelist = whitelist
 		self.blacklist = blacklist
@@ -167,7 +159,7 @@ def check_config_parameters(para_cfg_path:str = None) -> tuple[configparser.Conf
  
 def sync_whitelisting(section:configparser.SectionProxy) -> bool:
 	# Perform the "sync" based on the <whitelist>
-	# read & check all pathes is the section
+	# read & check all paths is the section
 	pass
 
 def sync_blacklisting(section: configparser.SectionProxy) -> bool:
