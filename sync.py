@@ -3,8 +3,19 @@ from pathlib import Path
 import json
 import re
 import os
+from sys import exc_info
+
 
 filename_regex = "^[A-Za-z0-9_-]+$"
+
+class ConfigurationError(Exception):
+    pass
+
+class MissingConfigError(ConfigurationError):
+    pass
+
+class InvalidConfigValueError(ConfigurationError):
+    pass
 
 # Configuration Key-Value default pairs
 ##      [labor-orca] # Labor Space Orca profile Section
@@ -127,7 +138,7 @@ class Section:
 	def __sync_blacklisting(self):
 		pass
 
-def check_config_parameters(para_cfg_path:str = None) -> configparser.ConfigParser:
+def check_config_parameters(para_cfg_path:str = None) -> tuple[configparser.ConfigParser, str]:
 	default_str_cfg_path = "config.cfg"
 
 	# Check and get config file Path
@@ -135,13 +146,13 @@ def check_config_parameters(para_cfg_path:str = None) -> configparser.ConfigPars
 	if para_cfg_path is None or para_cfg_path == "":
 		config_path = Path(default_str_cfg_path)
 		if not config_path.is_file():
-			print(f"ERR: no Path for Config-file is given, and the default path {default_str_cfg_path} is no file")
-			return None
+			raise FileNotFoundError(f"{default_str_cfg_path}")
+
 	else:
 		config_path = Path(para_cfg_path)
 		if not config_path.is_file():
-			print(f"ERR: given Config file path -{para_cfg_path}- is not available or no file")
-			return None
+			raise FileNotFoundError(f"{para_cfg_path}")
+
 	print(f"LOG: Use cfg-file: {config_path.absolute()}")
 
 	config = configparser.ConfigParser()
@@ -149,10 +160,10 @@ def check_config_parameters(para_cfg_path:str = None) -> configparser.ConfigPars
 
 	# Check for space sections
 	if len(config.sections()) < 1:
-		print("ERR: no Space-section is found, check your config")
-		return None
+		raise ConfigurationError(f"Config-file does not even hold one section.")
+
 	
-	return config #cofigparser.ConfigParser()
+	return (config, config_path) #configparser.ConfigParser()
  
 def sync_whitelisting(section:configparser.SectionProxy) -> bool:
 	# Perform the "sync" based on the <whitelist>
@@ -214,9 +225,19 @@ def sync_section(para_section:configparser.SectionProxy) -> bool:
 def main(para_cfg_path:str = None) -> bool:
 	
 	# get the config object
-	config = check_config_parameters(para_cfg_path)
-	if config is None:
+	try:
+		(config, path) = check_config_parameters(para_cfg_path)
+		print(f"LOG: Configuration loaded successfully from: -{path}- ")
+	except FileNotFoundError as e:
+		print(f"ERR: File not Found: {e}")
 		return False
+	except ConfigurationError as e:
+		print(f"ERR: bad Configuration: {e}")
+		return False
+	except e:
+		print(f"ERR: Unexpected Error occurred: {e}")
+		return False
+	
 	
 	# Start syncing
 	# get first config section
