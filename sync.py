@@ -45,10 +45,8 @@ class Section:
 
 	def __init__(self, section_cfg: configparser.ConfigParser):
 		self.name = section_cfg.name
-		if not self.check_set_section_properties(section_cfg):
-			return None
+		self.check_set_section_properties(section_cfg)
 		
-	
 	def check_set_section_properties (self, section):
 		"""Checking if given Section is in a readable shape and all paths are accessible as expected.
 
@@ -138,10 +136,36 @@ class Section:
 		return True
 
 	def sync(self) -> bool:
+		if self.whitelist != [] and self.blacklist != []:
+			raise InvalidConfigValueError(f"Whitelisting and Blacklisting on the same time is not supported atm!")
+		if self.whitelist != []:
+			self.__sync_whitelisting()
+			return
+		if self.blacklist != []:
+			self.__sync_blacklisting()
+			return
+		
+		# Start Synchronizing all files from the repro to the config directory
+		## TODO: get all paths(files) of the json files with the "id_" as prefix in both dir's
+		## TODO: Create a Dictionary in which all paths from the repro-dir gets tagged with {new,old or pass}
+		### {new} for a new not existing file
+		### {old} for an existing file thats outdated
+		### {pass} for an existing file thats up-to-date
+
+		# Go thro the dictionary and start the appropriate synchronization function for each path(file)
+		## TODO:
+
+	def __sync_new(self, r_path: Path, c_path: Path):
+		# TODO: Copy the r(repro)_path to the c(config)_path
+		pass
+
+	def __sync_old(self, r_path: Path, c_path: Path):
+		# TODO: Update the c(config)_path on the destination with the newer file in r(repro)_path
 		pass
 
 	def __sync_whitelisting(self):
 		pass
+
 	def __sync_blacklisting(self):
 		pass
 
