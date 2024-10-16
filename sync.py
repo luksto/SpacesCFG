@@ -45,7 +45,10 @@ class Section:
 
 	def __init__(self, section_cfg: configparser.ConfigParser):
 		self.name = section_cfg.name
-		self.check_set_section_properties(section_cfg)
+		try:
+			self.check_set_section_properties(section_cfg)
+		except Exception as e:
+			raise ConfigurationError(e)
 		
 	def check_set_section_properties (self, section):
 		"""Checking if given Section is in a readable shape and all paths are accessible as expected.
@@ -275,14 +278,19 @@ def main(para_cfg_path:str = None) -> bool:
 	# get section as object
 	for section_str in config.sections():
 		config_section = config[section_str]
-		working_section = Section(config_section)
+		try:
+			working_section = Section(config_section)
+		except Exception as e:
+			print(f"ERR: Unexpected Exception occures: see: {e}")
+			break
 		if not working_section:
 			continue
 		try:
 			working_section.sync()
-		except:
-			print(f"ERR: while syncing...")
-
+		except Exception as e:
+			print(f"ERR: while syncing: see: {e}")
+			break
+	# DONE!
 	print(f"LOG: DONE")
 
 
