@@ -146,7 +146,7 @@ class Section:
 			return
 		
 		# Start Synchronizing all files from the repro to the config directory
-		## TODO: get all paths(files) of the json files with the "id_" as prefix in both dir's
+		## TODO: get all json paths(files) with the "id_" as prefix in both dir's
 		## TODO: Create a Dictionary in which all paths from the repro-dir gets tagged with {new,old or pass}
 		### {new} for a new not existing file
 		### {old} for an existing file thats outdated
