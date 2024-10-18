@@ -46,11 +46,11 @@ class Section:
 	def __init__(self, section_cfg: configparser.ConfigParser):
 		self.name = section_cfg.name
 		try:
-			self.check_set_section_properties(section_cfg)
+			self._check_set_section_properties(section_cfg)
 		except Exception as e:
 			raise ConfigurationError(e)
 		
-	def check_set_section_properties (self, section):
+	def _check_set_section_properties (self, section):
 		"""Checking if given Section is in a readable shape and all paths are accessible as expected.
 
 		Args:
