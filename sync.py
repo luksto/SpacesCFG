@@ -5,7 +5,7 @@ import re
 import os
 from sys import exc_info
 
-
+# Regex-str to determine a legitimate filename
 filename_regex = "^[A-Za-z0-9_-]+$"
 
 class ConfigurationError(Exception):
