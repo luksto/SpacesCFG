@@ -274,7 +274,7 @@ def main(para_cfg_path:str = None) -> bool:
 		try:
 			working_section = Section(config_section)
 		except Exception as e:
-			print(f"ERR: Unexpected Exception occures: see: {e}")
+			print(f"ERR: Unexpected Exception occurs: see: {e}")
 			break
 		if not working_section:
 			continue
