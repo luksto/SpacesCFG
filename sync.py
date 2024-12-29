@@ -31,6 +31,8 @@ class Section:
 	repro_dir: Path
 	blacklist: list[str]
 	whitelist: list[str]
+	config_files: dict[str,str] #TODO: key=str(path) val=date(last-modified-time)
+	repro_files: dict[str,str]
 
 	def __init__(self, section_cfg: configparser.ConfigParser):
 		self.name = section_cfg.name
