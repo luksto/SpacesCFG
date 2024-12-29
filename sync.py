@@ -132,6 +132,15 @@ class Section:
 		return True
 
 	def sync(self) -> bool:
+		# Brainstorming
+		## Possible Synchronisation Cases:
+		### all New: No file from repro_dir should exists in config_dir and therefore all files will get syced(linked) to the config dir
+		### new files in repro_dir: these one gets additional linked to the config_dir
+		### removed file in repro_dir: links are not working anymore and should be removed
+		### renamed file in repro_dir: TODO how to recorgnice a renaming? to be able to redirect the link?
+		#### => old link is not valid: => remove it
+		#### => new name(file-link) does not exists => create new link!
+		#### => done! :)
 		if self.whitelist != [] and self.blacklist != []:
 			raise InvalidConfigValueError(f"Whitelisting and Blacklisting on the same time is not supported atm!")
 		if self.whitelist != []:
@@ -142,11 +151,21 @@ class Section:
 			return
 		
 		# Start Synchronizing all files from the repro to the config directory
-		## TODO: get all json paths(files) with the "id_" as prefix in both dir's
+		## TODO: get all json-files(paths) with the "id_" as prefix in both dir's
 		## TODO: Create a Dictionary in which all paths from the repro-dir gets tagged with {new,old or pass}
 		### {new} for a new not existing file
 		### {old} for an existing file thats outdated
 		### {pass} for an existing file thats up-to-date
+
+		for f in self.config_dir.walk():
+			# check if file needs to be sychroniced == {instance_id}[a-z].*\.json$
+			# TODO: if match: => add file and date to config_files dictionary
+			pass
+		# TODO: same for repro_dir and repro_files dictionary
+		
+		# Compare repro_files and config_files dictonary in path-names and newer dates
+		# TODO: get overlaping key-value pares
+
 
 		# Go thro the dictionary and start the appropriate synchronization function for each path(file)
 		## TODO:
