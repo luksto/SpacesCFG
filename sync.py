@@ -4,21 +4,10 @@ import json
 import re
 import os
 from sys import exc_info
+from space_exceptions import *
 
 # Regex-str to determine a legitimate filename
 filename_regex = "^[A-Za-z0-9_-]+$"
-
-class ConfigurationError(Exception):
-    pass
-
-class MissingConfigError(ConfigurationError):
-    pass
-
-class MissingCFGSectionPropertyError(MissingConfigError):
-	pass
-
-class InvalidConfigValueError(ConfigurationError):
-    pass
 
 # Configuration Key-Value default pairs
 ##      [labor-orca] # Labor Space Orca profile Section
@@ -90,8 +79,10 @@ class Section:
 
 
 		# read & check config- and git-path
-		if (not section[config_naming.local_config_path]) or (not section[config_naming.local_git_repro]):
-			raise InvalidConfigValueError(f"config or git repro paths should not be empty")
+		if (not section[config_naming.local_config_path]):
+			raise InvalidConfigValueError(f"config repro paths should not be empty")
+		if (not section[config_naming.local_git_repro]):
+			raise InvalidConfigValueError(f"git repro paths should not be empty")
 		## Set paths and resolve Environment variables and also (~) syntax
 		config_path = os.path.expandvars(section[config_naming.local_config_path])
 		config_path = Path(config_path).expanduser()
