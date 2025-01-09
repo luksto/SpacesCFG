@@ -191,8 +191,21 @@ class Section:
 	def __sync_blacklisting(self):
 		pass
 
-def check_config_parameters(para_cfg_path:str = None) -> tuple[configparser.ConfigParser, str]:
 
+def check_cfg_file(para_cfg_path:str) -> configparser.ConfigParser:
+	
+	"""Checks if the given path to a configuration (*.cfg) file is valid and if the file has minimal one section.
+
+	Args:
+		para_cfg_path (str): path to the file
+
+	Raises:
+		FileNotFoundError: If the path is no file, or does not exists.
+		ConfigurationError: If no section is found in the config file.
+
+	Returns:
+		configparser.ConfigParser: A configuration object of the cfg-file
+	"""	
 	# Check and get config file Path
 	logger.debug("Testing if (given) config file exists")
 	config_path = Path(para_cfg_path)
@@ -210,7 +223,7 @@ def check_config_parameters(para_cfg_path:str = None) -> tuple[configparser.Conf
 		logger.error(f"Config file has no section, must have one or more.")
 		raise ConfigurationError(f"Config-file does not even hold one section.")
 	
-	return (config, config_path) #configparser.ConfigParser()
+	return config #configparser.ConfigParser()
  
 def sync_whitelisting(section:configparser.SectionProxy) -> bool:
 	# Perform the "sync" based on the <whitelist>
@@ -269,22 +282,22 @@ def sync_section(para_section:configparser.SectionProxy) -> bool:
 	pass
 
 
-def main(para_cfg_path:str = None) -> bool:
+def main(para_cfg_path:str) -> bool:
 	
+	path = para_cfg_path
 	# get the config object
 	try:
-		(config, path) = check_config_parameters(para_cfg_path)
-		print(f"LOG: Configuration loaded successfully from: -{path}- ")
+		config = check_cfg_file(para_cfg_path)
+		logger.info(f"Configuration loaded successfully from: -{path}- ")
 	except FileNotFoundError as e:
-		print(f"ERR: File not Found: {e}")
+		logger.error(f"File not Found: {e}")
 		return False
 	except ConfigurationError as e:
-		print(f"ERR: bad Configuration: {e}")
+		logger.error(f"bad Configuration: {e}")
 		return False
 	except e:
-		print(f"ERR: Unexpected Error occurred: {e}")
+		logger.error(f"Unexpected Error occurred: {e}")
 		return False
-	
 	
 	# Start syncing
 	# get first config section
@@ -294,14 +307,14 @@ def main(para_cfg_path:str = None) -> bool:
 		try:
 			working_section = Section(config_section)
 		except Exception as e:
-			print(f"ERR: Unexpected Exception occurs: see: {e}")
+			logger.error(f"Unexpected Exception occurs: see: {e}")
 			break
 		if not working_section:
 			continue
 		try:
 			working_section.sync()
 		except Exception as e:
-			print(f"ERR: while syncing: see: {e}")
+			logger.error(f"while syncing: see: {e}")
 			break
 	# DONE!
 	print(f"LOG: DONE")
