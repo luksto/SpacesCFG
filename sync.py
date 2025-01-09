@@ -299,9 +299,11 @@ def main(para_cfg_path:str) -> bool:
 		logger.error(f"Unexpected Error occurred: {e}")
 		return False
 	
+	
 	# Start syncing
 	# get first config section
 	# get section as object
+	logger.debug(f"start syncing sections: {config.sections()}")
 	for section_str in config.sections():
 		config_section = config[section_str]
 		try:
@@ -317,7 +319,7 @@ def main(para_cfg_path:str) -> bool:
 			logger.error(f"while syncing: see: {e}")
 			break
 	# DONE!
-	print(f"LOG: DONE")
+	logger.info(f"DONE")
 
 
 
@@ -326,32 +328,12 @@ if __name__ == "__main__":
 	# Set up parser
 	parser = argparse.ArgumentParser(description="A tool to handel diverse Space-Device Configs like 3D-Printer or Laser-CNC configurations for your Software.")
 	parser.add_argument(
-		"--debug", 
-		action="store_true", 
-		help="Enable debug logging"
-	)
-	parser.add_argument(
 		"--cfg_path", "-f", 
 		type=str, 
 		default="config.cfg", 
 		help="Path to the configuration file (default: 'config.cfg')"
 	)
 	args = parser.parse_args()
-
-	# Make the Logging logger
-	logger.remove()  # Remove default handler
-	if args.debug:
-		# Add a console handler for DEBUG level (default-like format with colors)
-		logger.add(sys.stderr, level="DEBUG", format="<level>{time:YYYY-MM-DD HH:mm:ss}</level> | <level>{level: <8}</level> | <cyan>{message}</cyan>")
-		# Add a file handler for DEBUG level
-		logger.add("debug.log", level="DEBUG", format="{time:YYYY-MM-DD HH:mm:ss} | {level: <8} | {message}")
-		logger.debug("Debug logging is enabled")
-	else:
-		# Add a console handler for INFO level (default-like format with colors)
-		logger.add(sys.stderr, level="INFO", format="<level>{time:YYYY-MM-DD HH:mm:ss}</level> | <level>{level: <8}</level> | <cyan>{message}</cyan>")
-		# Add a file handler for INFO level
-		logger.add("app.log", level="INFO", format="{time:YYYY-MM-DD HH:mm:ss} | {level: <8} | {message}")
-		logger.info("Debug logging is disabled")
 
 	# Start the main code
 	main(args.cfg_path)
