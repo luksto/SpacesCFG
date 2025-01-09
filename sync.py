@@ -1,10 +1,17 @@
 import configparser
+import argparse
 from pathlib import Path
 import json
 import re
 import os
+import sys
 from sys import exc_info
 from space_exceptions import *
+
+# logger.debug, info, warning, error, critical
+from loguru import logger
+
+
 
 # Regex-str to determine a legitimate filename
 filename_regex = "^[A-Za-z0-9_-]+$"
@@ -185,29 +192,23 @@ class Section:
 		pass
 
 def check_config_parameters(para_cfg_path:str = None) -> tuple[configparser.ConfigParser, str]:
-	default_str_cfg_path = "config.cfg"
 
 	# Check and get config file Path
-	config_path = 0
-	if para_cfg_path is None or para_cfg_path == "":
-		config_path = Path(default_str_cfg_path)
-		if not config_path.is_file():
-			raise FileNotFoundError(f"{default_str_cfg_path}")
+	logger.debug("Testing if (given) config file exists")
+	config_path = Path(para_cfg_path)
+	if not config_path.is_file():
+		logger.exception(f"Path to config-file does not exists: {config_path}")
+		raise FileNotFoundError(f"{config_path}")
 
-	else:
-		config_path = Path(para_cfg_path)
-		if not config_path.is_file():
-			raise FileNotFoundError(f"{para_cfg_path}")
-
-	print(f"LOG: Use cfg-file: {config_path.absolute()}")
+	logger.info(f"found and accept config file: {config_path.absolute()}")
 
 	config = configparser.ConfigParser()
 	config.read(config_path)
 
 	# Check for space sections
 	if len(config.sections()) < 1:
+		logger.error(f"Config file has no section, must have one or more.")
 		raise ConfigurationError(f"Config-file does not even hold one section.")
-
 	
 	return (config, config_path) #configparser.ConfigParser()
  
@@ -308,4 +309,37 @@ def main(para_cfg_path:str = None) -> bool:
 
 
 if __name__ == "__main__":
-	main()
+	# First parse CLI Parameters:
+	# Set up parser
+	parser = argparse.ArgumentParser(description="A tool to handel diverse Space-Device Configs like 3D-Printer or Laser-CNC configurations for your Software.")
+	parser.add_argument(
+		"--debug", 
+		action="store_true", 
+		help="Enable debug logging"
+	)
+	parser.add_argument(
+		"--cfg_path", "-f", 
+		type=str, 
+		default="config.cfg", 
+		help="Path to the configuration file (default: 'config.cfg')"
+	)
+	args = parser.parse_args()
+
+	# Make the Logging logger
+	logger.remove()  # Remove default handler
+	if args.debug:
+		# Add a console handler for DEBUG level (default-like format with colors)
+		logger.add(sys.stderr, level="DEBUG", format="<level>{time:YYYY-MM-DD HH:mm:ss}</level> | <level>{level: <8}</level> | <cyan>{message}</cyan>")
+		# Add a file handler for DEBUG level
+		logger.add("debug.log", level="DEBUG", format="{time:YYYY-MM-DD HH:mm:ss} | {level: <8} | {message}")
+		logger.debug("Debug logging is enabled")
+	else:
+		# Add a console handler for INFO level (default-like format with colors)
+		logger.add(sys.stderr, level="INFO", format="<level>{time:YYYY-MM-DD HH:mm:ss}</level> | <level>{level: <8}</level> | <cyan>{message}</cyan>")
+		# Add a file handler for INFO level
+		logger.add("app.log", level="INFO", format="{time:YYYY-MM-DD HH:mm:ss} | {level: <8} | {message}")
+		logger.info("Debug logging is disabled")
+
+	# Start the main code
+	main(args.cfg_path)
+
