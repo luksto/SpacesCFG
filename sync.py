@@ -7,6 +7,7 @@ import os
 import sys
 from sys import exc_info
 from space_exceptions import *
+from dataclasses import dataclass
 
 # logger.debug, info, warning, error, critical
 from loguru import logger
@@ -24,6 +25,7 @@ filename_regex = "^[A-Za-z0-9_-]+$"
 ##      file_blacklist      = []
 ##      file_whitelist       = []
 
+@dataclass
 class config_naming:
 	instance_id = "instance_name"
 	local_config_path = "local_config_path"
@@ -303,22 +305,35 @@ def main(para_cfg_path:str) -> bool:
 	# Start syncing
 	# get first config section
 	# get section as object
+	skipped_section_strs = []
+	failed_section_strs = []
+
 	logger.debug(f"start syncing sections: {config.sections()}")
 	for section_str in config.sections():
-		config_section = config[section_str]
 		try:
-			working_section = Section(config_section)
+			working_section = Section_Sync(config[section_str])
 		except Exception as e:
 			logger.error(f"Unexpected Exception occurs: see: {e}")
-			break
+			logger.warning(f"Skipped section {section_str}")
+			skipped_section_strs.append(section_str)
+			continue
 		if not working_section:
+			logger.warning(f"got no object for {section_str}, continue with the next")
+			skipped_section_strs.append(section_str)
 			continue
 		try:
+			logger.debug(f"Start syncing section: {section_str}")
 			working_section.sync()
 		except Exception as e:
 			logger.error(f"while syncing: see: {e}")
-			break
+			logger.warning(f"Section {section_str} did not properly synced, see the error above!")
+			failed_section_strs.append(section_str)
+			continue
 	# DONE!
+	if len(skipped_section_strs) > 0:
+		logger.warning(f"Syncing has finished, but with {len(skipped_section_strs)} skipped sections!")
+	if len(failed_section_strs) > 0:
+		logger.error(f"Syncing has finished, but with {len(skipped_section_strs)} failed sections!")
 	logger.info(f"DONE")
 
 
