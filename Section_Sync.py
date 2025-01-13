@@ -1,3 +1,15 @@
+import configparser
+import os
+from pathlib import Path
+from space_exceptions import *
+from Config_Names import config_naming
+import re
+import json
+
+
+# Regex-str to determine a legitimate filename
+filename_regex = "^[A-Za-z0-9_-]+$"
+
 class Section_Sync:
 	name: str
 	id: str

@@ -17,9 +17,6 @@ import Section_Sync
 
 
 
-# Regex-str to determine a legitimate filename
-filename_regex = "^[A-Za-z0-9_-]+$"
-
 # Configuration Key-Value default pairs
 ##      [labor-orca] # Labor Space Orca profile Section
 ##      instance_name       = "LAB"
@@ -28,13 +25,6 @@ filename_regex = "^[A-Za-z0-9_-]+$"
 ##      file_blacklist      = []
 ##      file_whitelist       = []
 
-@dataclass
-class config_naming:
-	instance_id : str = "instance_name"
-	local_config_path : str = "local_config_path"
-	local_git_repro : str = "local_git_repro_path"
-	blacklist : str = "file_blacklist"
-	whitelist : str = "file_whitelist"
 
 
 def check_cfg_file(para_cfg_path:str) -> configparser.ConfigParser:
