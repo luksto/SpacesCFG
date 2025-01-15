@@ -1,29 +1,28 @@
 import configparser
 import argparse
 from pathlib import Path
+from dataclasses import dataclass
+from sys import exc_info
+import sys
 import json
 import re
 import os
-import sys
-from sys import exc_info
-from space_exceptions import *
-from dataclasses import dataclass
 
 # logger.debug, info, warning, error, critical
 from loguru import logger
 
 # Local Section syncing Class
 import Section_Sync
-
-
+from scr.space_exceptions import *
 
 # Configuration Key-Value default pairs
 ##      [labor-orca] # Labor Space Orca profile Section
-##      instance_name       = "LAB"
-##      local_config_path   = "~/.config/OrcaSlicer/"
-##      git_local_repro     = "~/git/Labor3D_Orca/"
-##      file_blacklist      = []
-##      file_whitelist       = []
+##      instance_prefix     = "LAB"
+##      destination_path   	= "~/.config/OrcaSlicer/"
+##      source_path     	= "~/git/Labor3D_Orca/"
+## 		online_repository 	= "" 							# not yet implemented
+##      blacklist_files     = []
+##      whitelist_files     = []
 
 
 
@@ -59,15 +58,6 @@ def check_cfg_file(para_cfg_path:str) -> configparser.ConfigParser:
 		raise ConfigurationError(f"Config-file does not even hold one section.")
 	
 	return config #configparser.ConfigParser()
- 
-def sync_whitelisting(section:configparser.SectionProxy) -> bool:
-	# Perform the "sync" based on the <whitelist>
-	# read & check all paths is the section
-	pass
-
-def sync_blacklisting(section: configparser.SectionProxy) -> bool:
-	pass
-	
 
 def sync_section(para_section:configparser.SectionProxy) -> bool:
 	# All config parameters are set and valid!
@@ -109,11 +99,6 @@ def sync_section(para_section:configparser.SectionProxy) -> bool:
 			continue
 		# create link from new to local (same filename)
 
-
-
-
-
-	
 	pass
 
 
