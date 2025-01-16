@@ -7,7 +7,7 @@ from scr.Section_Sync import Section_Sync
 from configparser import ConfigParser
 from loguru import logger
 
-class TestSection_Sync:
+class Test_Section_Sync:
 	def test_debug(self):
 		config = ConfigParser()
 		cfg_path = Path("./tests/config_test.cfg").absolute()
@@ -50,5 +50,5 @@ class TestSection_Sync:
 		assert tst_sync.prefix == "LAB"
 
 if __name__ == "__main__":
-	test = TestSection_Sync()
+	test = Test_Section_Sync()
 	test.test_debug()
