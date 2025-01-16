@@ -20,14 +20,15 @@ class Section_Sync:
 	#config_files: dict[str,str] #TODO: key=str(path) val=date(last-modified-time)
 	#repro_files: dict[str,str]
 	__filename_regex = "^[A-Za-z0-9_-]+$"
+	section_cfg: ConfigParser
 
 	def __init__(self, section_cfg: ConfigParser):
-		self.name = section_cfg.name # the [<section_name>] from the cfg-file
 		try:
-			self._check_set_section_properties(section_cfg)
+			self.name = section_cfg.name # the [<section_name>] from the cfg-file
 		except Exception as e:
-			raise ConfigurationError(e)
-	
+			raise MissingCFGSectionPropertyError(f"Cant read the 'name' of the given Section: {e}")
+		self.section_cfg = section_cfg
+
 	def __repr__(self) -> str:
 		return (f"Section_Sync("
 				f"name='{self.name}', "
@@ -36,55 +37,69 @@ class Section_Sync:
 				f"scr_path='{self.scr_path}', "
 				f"blacklist={self.blacklist}, "
 				f"whitelist={self.whitelist})")
-		
-	def _check_set_section_properties (self, section):
-		"""Checking if given Section is in a readable shape and all paths are accessible as expected.
+	
+	def read_cfg(self, section_cfg: ConfigParser, validate: bool = True):
+		self.section_cfg = section_cfg
+		if validate:
+			self.is_valid()
 
-		Args:
-			section (ConfigParser): A Section in an *.cfg Config file
-
-		Raises:
-			MissingCFGSectionPropertyError: Missing the named element form the given Section
-			InvalidConfigValueError: Invalid element-value given in the specified Section-element
-			FileNotFoundError: Given Path not found
-			PermissionError: Cant access given path with read or write permission - see output
-
-		Returns:
-			None: No Return
-		"""
+	def is_valid(self):
+		try:
+			self._validate_property_presence()
+			self._validate_sections_instance_prefix()
+			self._validate_section_paths()
+			self._validate_section_black_and_whitelists()
+		except Exception as e:
+			raise ConfigurationError(f"Section: {self.name} is not valid! See: {e}")
+		return True
+	
+	def _validate_property_presence(self) -> bool:
 		# check if all section-property's are present
-		if config_naming.prefix not in section:
+		if config_naming.prefix not in self.section_cfg:
 			raise MissingCFGSectionPropertyError(f"{config_naming.prefix}")
-		if config_naming.dst_path not in section:
+		if config_naming.dst_path not in self.section_cfg:
 			raise MissingCFGSectionPropertyError(f"{config_naming.dst_path}")
-		if config_naming.scr_path not in section:
+		if config_naming.scr_path not in self.section_cfg:
 			raise MissingCFGSectionPropertyError(f"{config_naming.scr_path}")
-		if config_naming.blacklist not in section:
+		if config_naming.blacklist not in self.section_cfg:
 			raise MissingCFGSectionPropertyError(f"{config_naming.blacklist}")
-		if config_naming.whitelist not in section:
+		if config_naming.whitelist not in self.section_cfg:
 			raise MissingCFGSectionPropertyError(f"{config_naming.whitelist}")
-
-		
+		return True
+	
+	def _validate_sections_instance_prefix(self) -> bool:
 		# check for valid <instance_prefix> != ""
 		try:
-			match = re.fullmatch(self.__filename_regex, section[config_naming.prefix])
-		except Exception as e:
-			raise InvalidConfigValueError(f"broken instance_prefix({section[config_naming.prefix]}) was given! see: Error: {e}")
+			match = re.fullmatch(self.__filename_regex, self.section_cfg[config_naming.prefix])
+		except Exception as e: # if match throws an unexpected error
+			raise InvalidConfigValueError(f"broken instance_prefix({self.section_cfg[config_naming.prefix]}) was given! see: Error: {e}")
 		if match is None: # No mach was found
 			raise InvalidConfigValueError(f"invalid instance_prefix given! only chars, digits, _ and - are allowed")
 		# set the prefix
-		self.prefix = section[config_naming.prefix]
+		self.prefix = self.section_cfg[config_naming.prefix]
+		return True
+	
+	def _validate_section_paths(self) -> bool:
+		"""Validating the given paths in the section_cfg,
+		if they are accessible and readable/writable as expected.
 
+		Raises:
+			InvalidConfigValueError: if the configuration value is not valid, see the error message for details
+			FileNotFoundError: if the given path does not exist
+			PermissionError: if the given path is not accessible with the expected permissions
 
+		Returns:
+			bool: True if all paths are valid, throwing an exception otherwise
+		"""
 		# read & check destination- and source-path
-		if (not section[config_naming.dst_path]):
+		if (not self.section_cfg[config_naming.dst_path]):
 			raise InvalidConfigValueError(f"config repro paths should not be empty")
-		if (not section[config_naming.scr_path]):
+		if (not self.section_cfg[config_naming.scr_path]):
 			raise InvalidConfigValueError(f"git repro paths should not be empty")
 		## Set paths and resolve Environment variables and also (~) syntax
-		dst_cfg_path = os.path.expandvars(section[config_naming.dst_path])
+		dst_cfg_path = os.path.expandvars(self.section_cfg[config_naming.dst_path])
 		dst_cfg_path = Path(dst_cfg_path).expanduser()
-		scr_cfg_path = os.path.expandvars(section[config_naming.scr_path])
+		scr_cfg_path = os.path.expandvars(self.section_cfg[config_naming.scr_path])
 		scr_cfg_path = Path(scr_cfg_path).expanduser()
 			#logger.debug(f"DBG: given config path: {para_section[config_naming.local_config_path]} was made to {config_path}")
 			#logger.debug(f"DBG: given git-repro path: {para_section[config_naming.local_git_repro]} was made to {repro_path}")
@@ -108,23 +123,23 @@ class Section_Sync:
 		
 		self.dst_path = dst_cfg_path
 		self.scr_path = scr_cfg_path
-		
-		
+		return True
+	
+	def _validate_section_black_and_whitelists(self) -> bool:
 		# check ether for whitelisting or blacklisting:
 		## if <whitelist> is not empty
 		try:
-			whitelist = json.loads(section.get(config_naming.whitelist))
+			whitelist = json.loads(self.section_cfg.get(config_naming.whitelist))
 		except Exception as e:
 			raise InvalidConfigValueError(f"whitelist data is in non readable shape! See: {e}")
 
 		try:
-			blacklist = json.loads(section.get(config_naming.blacklist))
+			blacklist = json.loads(self.section_cfg.get(config_naming.blacklist))
 		except Exception as e:
 			raise InvalidConfigValueError(f"blacklist data is in non readable shape! See: {e}")
 		
 		self.whitelist = whitelist
 		self.blacklist = blacklist
-		
 		return True
 
 	def sync(self) -> bool:
